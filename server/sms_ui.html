@@ -1,0 +1,444 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme:light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme:dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>短信</title>
+<style>
+:root{
+  --accent:#0a84ff; --bank:#5e5ce6; --pay:#30d158; --notify:#8e8e93;
+  --text:#1d1d1f; --sub:#6e6e73; --glass:rgba(255,255,255,.55);
+  --glass-brd:rgba(255,255,255,.6); --glass-sh:0 8px 32px rgba(0,0,0,.09);
+  --inner:inset 0 1px 0 rgba(255,255,255,.75);
+  --r:22px; --r-sm:14px;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --text:#f5f5f7; --sub:#98989d; --glass:rgba(30,30,32,.55);
+    --glass-brd:rgba(255,255,255,.13); --glass-sh:0 8px 32px rgba(0,0,0,.55);
+    --inner:inset 0 1px 0 rgba(255,255,255,.09);
+  }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{
+  margin:0;color:var(--text);background:#f2f2f7;
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","Helvetica Neue","PingFang SC","Hiragino Sans GB",sans-serif;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+  overflow-x:hidden;
+}
+@media (prefers-color-scheme:dark){body{background:#000}}
+/* 彩色光斑背景 —— 给液态玻璃提供折射内容 */
+body::before{
+  content:"";position:fixed;inset:-25%;z-index:-2;pointer-events:none;
+  background:
+    radial-gradient(circle at 18% 16%, #0a84ff 0%, transparent 42%),
+    radial-gradient(circle at 82% 12%, #bf5af2 0%, transparent 38%),
+    radial-gradient(circle at 65% 88%, #ff375f 0%, transparent 42%),
+    radial-gradient(circle at 8% 82%, #30d158 0%, transparent 38%);
+  filter:blur(70px);opacity:.30;
+}
+@media (prefers-color-scheme:dark){body::before{opacity:.38}}
+
+/* ===== 液态玻璃基类 ===== */
+.glass{
+  background:var(--glass);
+  -webkit-backdrop-filter:blur(28px) saturate(190%);
+  backdrop-filter:blur(28px) saturate(190%);
+  border:1px solid var(--glass-brd);
+  box-shadow:var(--glass-sh),var(--inner);
+}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .glass{background:rgba(255,255,255,.92)}
+  @media (prefers-color-scheme:dark){.glass{background:rgba(28,28,30,.95)}}
+}
+
+.wrap{max-width:760px;margin:0 auto;padding:0 14px 130px}
+
+/* ===== 顶部玻璃栏 ===== */
+header{
+  position:sticky;top:0;z-index:5;
+  padding:calc(env(safe-area-inset-top) + 14px) 14px 12px;
+  margin:0 -14px 6px;
+  background:var(--glass);
+  -webkit-backdrop-filter:blur(30px) saturate(190%);
+  backdrop-filter:blur(30px) saturate(190%);
+  border-bottom:1px solid var(--glass-brd);
+}
+h1{font-size:33px;font-weight:800;letter-spacing:-.025em;margin:0 0 4px}
+.sub{color:var(--sub);font-size:13.5px;font-weight:500}
+
+.searchbar{display:flex;gap:9px;margin-top:14px}
+.searchbar input{
+  flex:1;border:1px solid var(--glass-brd);outline:none;
+  background:rgba(120,120,128,.14);color:var(--text);
+  border-radius:12px;padding:10px 14px;font-size:16px;
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  transition:background .2s;
+}
+.searchbar input::placeholder{color:var(--sub)}
+.searchbar input:focus{background:rgba(120,120,128,.22)}
+.btn{
+  border:1px solid var(--glass-brd);background:rgba(120,120,128,.14);
+  color:var(--accent);font-weight:600;font-size:15px;
+  border-radius:12px;padding:10px 15px;cursor:pointer;
+  -webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);
+  transition:transform .12s ease,opacity .2s;white-space:nowrap;
+}
+.btn:active{transform:scale(.94);opacity:.75}
+
+/* ===== 分段筛选（可横向滚动） ===== */
+.seg{
+  display:flex;gap:6px;margin:12px -14px 16px;padding:2px 14px 6px;
+  overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;
+}
+.seg::-webkit-scrollbar{display:none}
+.seg button{
+  flex:0 0 auto;border:1px solid var(--glass-brd);
+  background:var(--glass);color:var(--sub);
+  -webkit-backdrop-filter:blur(18px) saturate(180%);
+  backdrop-filter:blur(18px) saturate(180%);
+  border-radius:999px;padding:8px 15px;font-size:14px;font-weight:600;
+  cursor:pointer;transition:all .18s ease;display:flex;align-items:center;gap:6px;
+}
+.seg button .n{
+  font-size:11.5px;background:rgba(120,120,128,.22);
+  border-radius:999px;padding:1px 7px;font-weight:700;min-width:20px;text-align:center;
+}
+.seg button.on{color:#fff;border-color:transparent;box-shadow:0 6px 20px rgba(0,0,0,.18),var(--inner)}
+.seg button.on .n{background:rgba(255,255,255,.28);color:#fff}
+.seg button[data-f="all"].on{background:linear-gradient(160deg,#3a3a3c,#1c1c1e)}
+.seg button[data-f="code"].on{background:linear-gradient(160deg,#4aa8ff,var(--accent))}
+.seg button[data-f="bank"].on{background:linear-gradient(160deg,#8b89ff,var(--bank))}
+.seg button[data-f="pay"].on{background:linear-gradient(160deg,#5ee07a,var(--pay))}
+.seg button[data-f="notify"].on{background:linear-gradient(160deg,#a5a5aa,#6e6e73)}
+
+/* ===== 短信卡片 ===== */
+.card{
+  position:relative;border-radius:var(--r);padding:15px 17px;margin-bottom:11px;
+  background:var(--glass);
+  -webkit-backdrop-filter:blur(28px) saturate(190%);
+  backdrop-filter:blur(28px) saturate(190%);
+  border:1px solid var(--glass-brd);
+  box-shadow:var(--glass-sh),var(--inner);
+  animation:pop .28s cubic-bezier(.22,1,.36,1);
+  overflow:hidden;
+}
+@keyframes pop{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1;transform:none}}
+.card::before{ /* 左侧分类色条 */
+  content:"";position:absolute;left:0;top:0;bottom:0;width:4px;
+  background:var(--cat,var(--notify));
+}
+.card[data-cat="code"]{--cat:var(--accent)}
+.card[data-cat="bank"]{--cat:var(--bank)}
+.card[data-cat="pay"]{--cat:var(--pay)}
+.card[data-cat="notify"]{--cat:var(--notify)}
+
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.sender{font-weight:700;font-size:16px;letter-spacing:-.01em;word-break:break-all}
+.time{color:var(--sub);font-size:12.5px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.chips{display:flex;gap:5px;align-items:center;margin-top:2px;flex-wrap:wrap}
+.chip{
+  font-size:11px;font-weight:700;border-radius:7px;padding:2.5px 7px;letter-spacing:.01em;
+  color:#fff;background:var(--cat,var(--notify));
+}
+.chip.ghost{background:rgba(120,120,128,.20);color:var(--sub)}
+.body{margin-top:9px;font-size:15px;line-height:1.55;white-space:pre-wrap;word-break:break-word}
+
+/* ===== 验证码强调块 ===== */
+.otp{
+  margin-top:12px;border-radius:var(--r-sm);padding:12px 14px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  background:linear-gradient(150deg,rgba(10,132,255,.20),rgba(10,132,255,.07));
+  border:1px solid rgba(10,132,255,.38);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.35);
+}
+@media (prefers-color-scheme:dark){
+  .otp{background:linear-gradient(150deg,rgba(10,132,255,.28),rgba(10,132,255,.10))}
+}
+.otp-l{display:flex;flex-direction:column;gap:2px;min-width:0}
+.otp-k{font-size:11px;font-weight:700;color:var(--accent);letter-spacing:.10em;text-transform:uppercase}
+.otp-v{
+  font-size:29px;font-weight:800;letter-spacing:.13em;color:var(--accent);
+  font-variant-numeric:tabular-nums;line-height:1.12;
+  font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  text-shadow:0 1px 12px rgba(10,132,255,.35);
+}
+.otp-b{
+  flex:0 0 auto;border:none;cursor:pointer;color:#fff;font-weight:700;font-size:14px;
+  background:linear-gradient(160deg,#4aa8ff,var(--accent));
+  border-radius:999px;padding:10px 17px;
+  box-shadow:0 5px 16px rgba(10,132,255,.45),inset 0 1px 0 rgba(255,255,255,.35);
+  transition:transform .12s ease;
+}
+.otp-b:active{transform:scale(.92)}
+
+.empty{text-align:center;color:var(--sub);padding:70px 20px;font-size:15px;font-weight:500}
+.empty .em{font-size:42px;display:block;margin-bottom:12px;opacity:.5}
+
+/* ===== 悬浮发短信按钮 ===== */
+.fab{
+  position:fixed;right:18px;bottom:calc(22px + env(safe-area-inset-bottom));
+  width:58px;height:58px;border-radius:50%;border:1px solid rgba(255,255,255,.35);
+  background:linear-gradient(160deg,#4aa8ff,var(--accent));color:#fff;font-size:23px;
+  box-shadow:0 10px 30px rgba(10,132,255,.5),inset 0 1px 0 rgba(255,255,255,.45);
+  -webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);
+  cursor:pointer;z-index:6;transition:transform .14s ease;
+}
+.fab:active{transform:scale(.9)}
+.fab-badge{
+  position:absolute;top:-5px;left:-11px;font-size:10px;font-weight:800;
+  background:#ff9f0a;color:#1c1c1e;border-radius:999px;padding:2px 6px;
+  letter-spacing:.02em;box-shadow:0 2px 6px rgba(0,0,0,.25);
+}
+
+/* 实验性功能提示条 */
+.exp{
+  display:flex;align-items:flex-start;gap:8px;margin-bottom:12px;
+  background:rgba(255,159,10,.15);border:1px solid rgba(255,159,10,.45);
+  border-radius:13px;padding:10px 12px;font-size:12.5px;line-height:1.55;color:var(--text);
+}
+.exp b{color:#ff9f0a}
+.exp .ic{flex:0 0 auto;font-size:15px}
+
+/* 发送结果回显 */
+.sendres{
+  margin-top:10px;border-radius:12px;padding:10px 12px;font-size:12.5px;line-height:1.55;
+  display:none;word-break:break-all;
+  font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+.sendres.on{display:block}
+.sendres.ok{background:rgba(48,209,88,.18);border:1px solid rgba(48,209,88,.5)}
+.sendres.bad{background:rgba(255,69,58,.15);border:1px solid rgba(255,69,58,.45)}
+
+/* ===== 底部发信面板 ===== */
+.sheet{position:fixed;inset:0;z-index:9;display:none;align-items:flex-end;justify-content:center;
+  background:rgba(0,0,0,.32);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.sheet.on{display:flex;animation:fade .2s ease}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.panel{
+  width:100%;max-width:560px;border-radius:26px 26px 0 0;
+  padding:10px 18px calc(22px + env(safe-area-inset-bottom));
+  background:var(--glass);
+  -webkit-backdrop-filter:blur(34px) saturate(190%);
+  backdrop-filter:blur(34px) saturate(190%);
+  border-top:1px solid var(--glass-brd);
+  box-shadow:0 -10px 40px rgba(0,0,0,.25);
+  animation:up .3s cubic-bezier(.22,1,.36,1);
+}
+@keyframes up{from{transform:translateY(100%)}to{transform:none}}
+.grab{width:38px;height:5px;border-radius:3px;background:rgba(120,120,128,.4);margin:0 auto 14px}
+.phead{display:flex;justify-content:space-between;align-items:center;margin-bottom:15px}
+.phead b{font-size:17px;font-weight:700}
+.phead button{border:none;background:none;color:var(--accent);font-size:16px;font-weight:600;cursor:pointer;padding:4px}
+.panel input,.panel textarea{
+  width:100%;border:1px solid var(--glass-brd);outline:none;
+  background:rgba(120,120,128,.14);color:var(--text);
+  border-radius:13px;padding:12px 14px;font-size:16px;margin-bottom:10px;
+  font-family:inherit;-webkit-appearance:none;
+}
+.panel textarea{min-height:104px;resize:vertical}
+.warn{color:#ff9f0a;font-size:12.5px;font-weight:600}
+
+/* ===== 复制提示 ===== */
+.toast{
+  position:fixed;left:50%;bottom:calc(96px + env(safe-area-inset-bottom));
+  transform:translate(-50%,14px);opacity:0;pointer-events:none;z-index:20;
+  padding:11px 20px;border-radius:999px;font-size:14.5px;font-weight:700;color:#fff;
+  background:rgba(28,28,30,.82);
+  -webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);
+  border:1px solid rgba(255,255,255,.16);
+  transition:opacity .22s ease,transform .22s ease;
+}
+.toast.on{opacity:1;transform:translate(-50%,0)}
+
+/* ===== 移动端适配 ===== */
+@media (max-width:520px){
+  h1{font-size:31px}
+  .wrap{padding:0 12px 120px}
+  .card{padding:14px 15px 14px 17px;border-radius:20px}
+  .body{font-size:15px}
+  .otp-v{font-size:26px}
+  .sender{font-size:15.5px}
+}
+@media (min-width:521px){
+  .wrap{padding:0 20px 130px}
+  header{padding:22px 20px 14px;margin:0 -20px 8px}
+}
+/* iOS：加强玻璃质感与原生手感 */
+html[data-ua="ios"] .glass,
+html[data-ua="ios"] header,
+html[data-ua="ios"] .panel{
+  -webkit-backdrop-filter:blur(34px) saturate(210%);
+  backdrop-filter:blur(34px) saturate(210%);
+}
+html[data-ua="ios"] .card{-webkit-overflow-scrolling:touch}
+html.touch .card:active{transform:scale(.985);transition:transform .12s ease}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>短信</h1>
+    <div class="sub" id="sub">加载中…</div>
+    <div class="searchbar">
+      <input type="search" id="q" placeholder="搜索内容或号码" enterkeyhint="search">
+      <button class="btn" id="sync">同步</button>
+    </div>
+    <div class="seg" id="seg"></div>
+  </header>
+  <div id="list"></div>
+</div>
+
+<button class="fab" id="compose" aria-label="发送短信（实验性）">✎<span class="fab-badge">实验</span></button>
+
+<div class="sheet" id="sheet">
+  <div class="panel">
+    <div class="grab"></div>
+    <div class="phead">
+      <button id="cancel">取消</button><b>发送短信</b><button id="doSend">发送</button>
+    </div>
+    <div class="exp">
+      <span class="ic">⚠️</span>
+      <div><b>实验性功能，可能失败。</b>模组的串口被拨号服务占用，发送时若正好冲突会无响应，稍等重试通常即可成功。发送走运营商通道，<b>按条计费</b>。</div>
+    </div>
+    <input id="to" placeholder="收件人号码" inputmode="tel" autocomplete="off">
+    <textarea id="txt" placeholder="短信内容"></textarea>
+    <div class="sendres" id="sendres"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast">已复制</div>
+
+<script>
+const CATS=[
+  {k:'all',   n:'全部'},
+  {k:'code',  n:'验证码'},
+  {k:'bank',  n:'银行'},
+  {k:'pay',   n:'支付'},
+  {k:'notify',n:'通知'}
+];
+const RE={
+  code:  /验证码|验证密码|校验码|动态密码|短信密码|登录码|口令|\bOTP\b|verification code/i,
+  bank:  /银行|信用卡|储蓄卡|借记卡|贷记卡|银联|转账|余额|账单|征信|工行|建行|农行|中行|招行|交行|邮储|兴业|浦发|中信|民生|光大|广发|华夏|平安银行|农村商业/i,
+  pay:   /支付|扣款|扣费|消费|订单|退款|收款|到账|付款|支付宝|微信支付|云闪付|Apple ?Pay|POS|免密/i
+};
+const $=s=>document.querySelector(s);
+const esc=s=>(s==null?'':String(s)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let all=[],filter='all',kw='';
+
+/* UA 适配 */
+(function(){
+  const ua=navigator.userAgent||'';
+  const d=document.documentElement;
+  d.dataset.ua = /iPhone|iPad|iPod/i.test(ua) ? 'ios'
+               : /Android/i.test(ua) ? 'android'
+               : /Macintosh/i.test(ua) ? 'mac' : 'desktop';
+  if(matchMedia('(hover:none) and (pointer:coarse)').matches) d.classList.add('touch');
+})();
+
+function catOf(t){
+  t=t||'';
+  if(RE.code.test(t)) return 'code';
+  if(RE.bank.test(t)) return 'bank';
+  if(RE.pay.test(t))  return 'pay';
+  return 'notify';
+}
+function findCode(t){
+  t=t||'';
+  let m=t.match(/(?:验证码|验证密码|校验码|动态密码|短信密码|登录码|口令|OTP)[^0-9]{0,10}(\d{4,8})/i);
+  if(m) return m[1];
+  m=t.match(/(?:^|[^0-9])(\d{6})(?:[^0-9]|$)/);
+  return m?m[1]:null;
+}
+function segRender(){
+  $('#seg').innerHTML=CATS.map(c=>{
+    const n=c.k==='all'?all.length:all.filter(m=>catOf(m.content)===c.k).length;
+    return `<button data-f="${c.k}" class="${filter===c.k?'on':''}">${c.n}<span class="n">${n}</span></button>`;
+  }).join('');
+}
+function render(){
+  const L=all.filter(m=>{
+    if(filter!=='all'&&catOf(m.content)!==filter) return false;
+    if(kw){const s=((m.content||'')+' '+(m.sender||'')).toLowerCase();if(!s.includes(kw)) return false}
+    return true;
+  });
+  $('#sub').textContent=`共 ${all.length} 条`+(L.length!==all.length?` · 当前 ${L.length} 条`:` · 全部显示`);
+  segRender();
+  if(!L.length){$('#list').innerHTML=`<div class="empty"><span class="em">✉️</span>暂无短信</div>`;return}
+  $('#list').innerHTML=L.map(m=>{
+    const cat=catOf(m.content), code=findCode(m.content);
+    const nm=CATS.find(c=>c.k===cat).n;
+    return `<div class="card" data-cat="${cat}">
+      <div class="top">
+        <div>
+          <div class="sender">${esc(m.sender)}</div>
+          <div class="chips"><span class="chip">${nm}</span>${m.parts>1?`<span class="chip ghost">${m.parts} 段</span>`:''}${m.source==='sync'?'<span class="chip ghost">实时</span>':''}</div>
+        </div>
+        <span class="time">${esc(m.ts||m.received_at||'')}</span>
+      </div>
+      <div class="body">${esc(m.content)}</div>
+      ${code?`<div class="otp"><div class="otp-l"><span class="otp-k">验证码</span><span class="otp-v">${esc(code)}</span></div><button class="otp-b" data-c="${esc(code)}">复制</button></div>`:''}
+    </div>`;
+  }).join('');
+}
+function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('on');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('on'),1400)}
+async function load(){
+  try{const r=await fetch('/api/list',{cache:'no-store'});all=await r.json();render()}
+  catch(e){$('#sub').textContent='加载失败，请检查网络'}
+}
+$('#q').addEventListener('input',e=>{kw=e.target.value.trim().toLowerCase();render()});
+$('#seg').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;filter=b.dataset.f;render()});
+$('#list').addEventListener('click',async e=>{
+  const b=e.target.closest('.otp-b'); if(!b) return;
+  const v=b.dataset.c;
+  try{await navigator.clipboard.writeText(v);b.textContent='已复制 ✓';toast('验证码 '+v+' 已复制');setTimeout(()=>b.textContent='复制',1500)}
+  catch(_){
+    const ta=document.createElement('textarea');ta.value=v;document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');toast('验证码 '+v+' 已复制')}catch(__){toast('复制失败，请长按选择')}
+    ta.remove();
+  }
+});
+$('#sync').addEventListener('click',async function(){
+  const o=this.textContent;this.textContent='同步中…';
+  try{const r=await fetch('/api/sync',{method:'POST'});const j=await r.json();
+    toast(j.synced>0?`同步到 ${j.synced} 条新短信`:'已是最新');await load()}
+  catch(e){toast('同步失败')}
+  this.textContent=o;
+});
+function showRes(ok,text){
+  const el=$('#sendres');
+  el.className='sendres on '+(ok?'ok':'bad');
+  el.textContent=text;
+}
+$('#compose').addEventListener('click',()=>{
+  $('#sendres').className='sendres';
+  $('#sheet').classList.add('on');setTimeout(()=>$('#to').focus(),120);
+});
+$('#cancel').addEventListener('click',()=>$('#sheet').classList.remove('on'));
+$('#sheet').addEventListener('click',e=>{if(e.target===$('#sheet'))$('#sheet').classList.remove('on')});
+$('#doSend').addEventListener('click',async()=>{
+  const to=$('#to').value.trim(),t=$('#txt').value.trim();
+  if(!to||!t){toast('请填写号码和内容');return}
+  if(!confirm(`向 ${to} 发送短信：\n\n· 走运营商通道，按条计费\n· 实验性功能，可能因串口冲突失败\n\n确认发送？`))return;
+  const btn=$('#doSend');btn.textContent='发送中…';
+  showRes(true,'发送中，请稍候（最长约 30 秒）…');
+  try{
+    const r=await fetch('/api/send',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({to,text:t})});
+    const j=await r.json();
+    if(j.ok){showRes(true,'✅ 已提交运营商\n'+(j.out||''));toast('已提交运营商')}
+    else{showRes(false,'❌ 发送失败\n'+(j.msg||j.error||j.out||'未知原因')+'（可稍后重试）');toast('发送失败')}
+  }catch(e){showRes(false,'❌ 请求出错：'+e.message)}
+  btn.textContent='发送';
+});
+load();
+setInterval(load,15000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)load()});
+</script>
+</body>
+</html>
