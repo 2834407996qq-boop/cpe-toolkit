@@ -1,0 +1,22 @@
+[Unit]
+Description=SMS Gateway (self-hosted SMS inbox for CPE)
+Documentation=https://github.com/YOUR_USERNAME/cpe-toolkit
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /opt/sms/sms_server.py
+Restart=always
+RestartSec=5
+User=root
+
+# 令牌等敏感配置放这里（或改用 EnvironmentFile）
+# Environment=SMS_TOKEN=change-me
+# Environment=SMS_CPE=http://127.0.0.1:18112
+
+# 基础加固
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
