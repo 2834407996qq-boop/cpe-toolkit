@@ -1,0 +1,37 @@
+# ---- 敏感配置：绝不入库 ----
+pushplus.conf
+cpe_tunnel.conf
+config.json
+sms-server.config.json
+*.htpasswd
+.htpasswd*
+*.pem
+*.key
+id_ed25519*
+authorized_keys
+known_hosts
+
+# ---- 运行时产物 ----
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+__pycache__/
+*.py[cod]
+*.log
+*.tmp
+sms_seen*
+sms_fwd_beat
+sms_recv.tmp
+
+# ---- 编辑器 / 系统 ----
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*~
+
+# ---- 本地测试脚本（含真实环境信息）----
+/test/
+/scratch/
