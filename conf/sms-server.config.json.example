@@ -1,0 +1,10 @@
+{
+  "_说明": "复制到 /opt/sms/config.json 并修改。也可用同名大写环境变量覆盖（SMS_TOKEN 等）",
+
+  "token": "请改成一段足够长的随机字符串，并与 CPE 的 /etc/pushplus.conf 里 SERVER_TOKEN 保持一致",
+
+  "db": "/opt/sms/db/sms.db",
+  "cpe": "http://127.0.0.1:18112",
+  "port": 18999,
+  "ui": "/opt/sms/ui.html"
+}
